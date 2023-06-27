@@ -168,13 +168,13 @@ def print_stats(stats):
         for method in methods.keys():
             index.append("{}:{}".format(benchmark, method))
             requests_count = methods[method]['requests']['success'] + methods[method]['requests']['error']
-            if requests_count:
+            if requests_count and runtime:
                 data = [
                     round(requests_count / runtime, 2),
                     "{}ms / {}ms /{}ms".format(round(methods[method]['latency']['min']),round(methods[method]['latency']['sum']/requests_count),round(methods[method]['latency']['max'])),
                     methods[method]['requests']['success'],
                     methods[method]['requests']['error'],
-                    "{}%".format(round(methods[method]['requests']['error'] / (methods[method]['requests']['success']+methods[method]['requests']['error']) * 100))
+                    "{}%".format(round((methods[method]['requests']['error'] / requests_count) * 100))
                 ]
             else:
                 data = [0,0,0,0,0]
