@@ -27,7 +27,7 @@ def run():
     parser.add_argument('-R', '--runtime',
                         required=False,
                         type=int,
-                        default=9999999999999999,
+                        default=None,
                         dest='max_runtime',
                         action='store',
                         help='Run benchmark for set time in seconds, OPTIONAL, default: unlimited')
@@ -145,19 +145,25 @@ def run():
 
                     stats['errors'][result['error']] +=1
 
-        print_stats(stats)
+        print_stats(cfg, stats)
         time.sleep(1)
+        if cfg.args.max_runtime and (time.time() - stats['start_timestamp']) > cfg.args.max_runtime:
+            cfg.gk.kill_now = True
 
     sys.exit(0)
 
 
-def print_stats(stats):
+def print_stats(cfg, stats):
     os.system("clear")
     runtime = round(time.time()-stats['start_timestamp'])
     print("Benchmark Statistics")
     print("-"*100)
     print("Time         : {}".format(time.strftime("%H:%M:%S")))
-    print("Runtime      : {} seconds".format(runtime))
+    if cfg.args.max_runtime:
+        print("Runtime      : {} of {} seconds".format(runtime, cfg.args.max_runtime))
+    else:
+        print("Runtime      : {} seconds".format(runtime))
+
     print("Total threads: {}".format(stats['threads_count']))
 
     index = []
