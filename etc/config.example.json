@@ -1,0 +1,69 @@
+{
+  "http-api": {
+    "url": "http://host:port/jsonRPC",
+    "api_token": false
+  },
+  "data": {
+    "accounts": {
+      "all": "/tmp/accounts_testnet.txt"
+    },
+    "blocks": {
+      "masterchain": "/tmp/blocks_mc_testnet.txt",
+      "workchain": "/tmp/blocks_wc_testnet.txt"
+    }
+  },
+  "benchmarks": {
+    "http-api": [
+      {
+        "method": "getTransactions",
+        "id": "default",
+        "threads": 20,
+        "thread_max_rps": 5,
+        "params": {
+          "limit_range": [10,20],
+          "accounts_list": "all"
+        }
+      },
+      {
+        "method": "shards",
+        "id": "recent",
+        "threads": 10,
+        "thread_max_rps": 5,
+        "params": {
+          "seqno_range": [9000000,null]
+        }
+      },
+      {
+        "method": "shards",
+        "id": "archival",
+        "threads": 5,
+        "thread_max_rps": 1,
+        "params": {
+          "seqno_range": [0,5000000]
+        }
+      },
+      {
+        "method": "getBlockTransactions",
+        "id": "masterchain",
+        "threads": 5,
+        "thread_max_rps": 1,
+        "params": {
+          "count_range": [40,40],
+          "index_range": [0,null],
+          "blocks_list": "masterchain"
+        }
+      },
+      {
+        "method": "getBlockTransactions",
+        "id": "workchain",
+        "threads": 5,
+        "thread_max_rps": 1,
+        "params": {
+          "count_range": [40,40],
+          "index_range": [0,null],
+          "blocks_list": "workchain"
+        }
+      }
+    ]
+  }
+}
