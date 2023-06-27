@@ -32,6 +32,8 @@ def run():
                         action='store',
                         help='Run benchmark for set time in seconds, OPTIONAL, default: unlimited')
 
+
+    print("Initializing and loading databases, please wait...")
     cfg = AppConfig(parser.parse_args())
 
     start_timestamp = time.time()
