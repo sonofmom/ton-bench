@@ -187,7 +187,7 @@ def print_stats(stats):
     print("\n")
 
     print("Errors")
-    print("-"*80)
+    print("-"*100)
     if not stats['errors']:
         print("None")
     else:
