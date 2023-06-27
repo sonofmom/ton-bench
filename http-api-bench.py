@@ -178,19 +178,21 @@ def print_stats(cfg, stats):
             if requests_count and runtime:
                 data = [
                     round(requests_count / runtime, 2),
-                    "{}ms / {}ms /{}ms".format(round(methods[method]['latency']['min']),round(methods[method]['latency']['sum']/requests_count),round(methods[method]['latency']['max'])),
+                    "{}ms".format(round(methods[method]['latency']['min'])),
+                    "{}ms".format(round(methods[method]['latency']['sum']/requests_count)),
+                    "{}ms".format(round(methods[method]['latency']['max'])),
                     methods[method]['requests']['success'],
                     methods[method]['requests']['error'],
                     "{}%".format(round((methods[method]['requests']['error'] / requests_count) * 100))
                 ]
             else:
-                data = [0,0,0,0,0]
+                data = [0,"0ms","0ms","0ms",0,0,"0%"]
 
 
             rows.append(data)
 
     pd.set_option('display.max_rows', 10000)
-    table = pd.DataFrame(rows, columns=['RPS', 'Latency', 'Success', 'Failure', 'F.Rate'], index=index)
+    table = pd.DataFrame(rows, columns=['RPS', 'L.Min', 'L.Avg','L.Max','Success', 'Failure', 'F.Rate'], index=index)
     print(table)
     print("-"*100)
     print("\n")
