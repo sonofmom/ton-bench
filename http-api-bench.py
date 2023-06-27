@@ -3,13 +3,12 @@
 import sys
 import os
 import argparse
-import datetime
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import Libraries.arguments as ar
-import Libraries.tools.general as gt
 from Classes.AppConfig import AppConfig
-from Classes.TonHttpApi import TonHttpApi
 from Classes.Benchmarks.HttpApi.GetTransactionsThread import GetTransactionsThread
 from Classes.Benchmarks.HttpApi.ShardsThread import ShardsThread
 from Classes.Benchmarks.HttpApi.GetBlockTransactionsThread import GetBlockTransactions
@@ -159,7 +158,8 @@ def print_stats(cfg, stats):
     print("Benchmark Statistics")
     print("-"*100)
     print("Remote       : {}".format(cfg.config['http-api']['url']))
-    print("Time         : {}".format(time.strftime("%H:%M:%S")))
+    print("Start Time   : {}".format(datetime.fromtimestamp(stats['start_timestamp'], tz=ZoneInfo("UTC"))))
+    print("Current Time : {}".format(datetime.now(tz=ZoneInfo("UTC"))))
     if cfg.args.max_runtime:
         print("Runtime      : {} of {} seconds".format(runtime, cfg.args.max_runtime))
     else:

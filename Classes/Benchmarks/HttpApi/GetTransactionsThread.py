@@ -1,4 +1,3 @@
-import Libraries.tools.general as gt
 from Classes.TonHttpApi import TonHttpApi
 from threading import Thread
 import time
