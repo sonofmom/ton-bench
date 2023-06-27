@@ -158,6 +158,7 @@ def print_stats(cfg, stats):
     runtime = round(time.time()-stats['start_timestamp'])
     print("Benchmark Statistics")
     print("-"*100)
+    print("Remote       : {}".format(cfg.config['http-api']['url']))
     print("Time         : {}".format(time.strftime("%H:%M:%S")))
     if cfg.args.max_runtime:
         print("Runtime      : {} of {} seconds".format(runtime, cfg.args.max_runtime))
