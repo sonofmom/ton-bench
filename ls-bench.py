@@ -8,10 +8,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from Classes.AppConfig import AppConfig
-from Classes.Benchmarks.HttpApi.GetTransactionsThread import GetTransactionsThread
+from Classes.Benchmarks.LiteServer.GetAccountThread import GetAccountThread
 from Classes.Benchmarks.HttpApi.ShardsThread import ShardsThread
 from Classes.Benchmarks.HttpApi.GetBlockTransactionsThread import GetBlockTransactions
-from Classes.Benchmarks.HttpApi.GetWalletInformationThread import GetWalletInformationThread
 from queue import Queue
 import pandas as pd
 
@@ -28,21 +27,19 @@ def run():
                         action='store',
                         help='Benchmark definition json file, REQUIRED')
 
-    parser.add_argument('-a', '--api-url',
+    parser.add_argument('-a', '--addr',
                         required=True,
                         type=str,
-                        default=None,
-                        dest='api_url',
+                        dest='ls_addr',
                         action='store',
-                        help='Full URL to http api jsonRPC method, REQUIRED')
+                        help='LiteServer address:port - REQUIRED')
 
-    parser.add_argument('-k', '--api-key',
-                        required=False,
+    parser.add_argument('-B', '--b64',
+                        required=True,
                         type=str,
-                        default=None,
-                        dest='api_key',
+                        dest='ls_key',
                         action='store',
-                        help='HTTP api key , OPTIONAL')
+                        help='LiteServer base64 key as encoded in network config - REQUIRED')
 
     parser.add_argument('-R', '--runtime',
                         required=False,
@@ -64,65 +61,23 @@ def run():
     cfg = AppConfig(parser.parse_args())
 
     start_timestamp = time.time()
-    benchmark_configs = {}
     queues = {}
     th_db = []
     for element in cfg.config["benchmarks"]:
         e_id = "{}:{}".format(element["method"],element["id"])
-        benchmark_configs[e_id] = element
         queues[e_id] = {
             'success': Queue(),
             'error': Queue()
         }
         cfg.log.log(os.path.basename(__file__), 3, "Configuring benchmark {} with {} thread(s)".format(e_id,element["threads"]))
-        if element["method"] == 'getTransactions':
+        if element["method"] == 'getAccount':
             for idx in range(element["threads"]):
                 th_db.append(
-                    GetTransactionsThread(
+                    GetAccountThread(
                         id = idx,
                         config=cfg.config,
-                        data=cfg.data,
-                        log=cfg.log,
-                        gk=cfg.gk,
-                        queues=queues[e_id],
-                        params=element["params"],
-                        max_rps=element["thread_max_rps"]
-                    )
-                )
-        elif element["method"] == 'getWalletInformation':
-            for idx in range(element["threads"]):
-                th_db.append(
-                    GetWalletInformationThread(
-                        id = idx,
-                        config=cfg.config,
-                        data=cfg.data,
-                        log=cfg.log,
-                        gk=cfg.gk,
-                        queues=queues[e_id],
-                        params=element["params"],
-                        max_rps=element["thread_max_rps"]
-                    )
-                )
-        elif element["method"] == 'shards':
-            for idx in range(element["threads"]):
-                th_db.append(
-                    ShardsThread(
-                        id = idx,
-                        config=cfg.config,
-                        data=cfg.data,
-                        log=cfg.log,
-                        gk=cfg.gk,
-                        queues=queues[e_id],
-                        params=element["params"],
-                        max_rps=element["thread_max_rps"]
-                    )
-                )
-        elif element["method"] == 'getBlockTransactions':
-            for idx in range(element["threads"]):
-                th_db.append(
-                    GetBlockTransactions(
-                        id = idx,
-                        config=cfg.config,
+                        ls_addr=cfg.args.ls_addr,
+                        ls_key=cfg.args.ls_key,
                         data=cfg.data,
                         log=cfg.log,
                         gk=cfg.gk,
@@ -153,7 +108,6 @@ def run():
         for benchmark_id, benchmark_queues in queues.items():
             if benchmark_id not in stats['benchmarks']:
                 stats['benchmarks'][benchmark_id] = {
-                    'config': benchmark_configs[benchmark_id],
                     'requests': {
                         'success': 0,
                         'error': 0
@@ -196,7 +150,7 @@ def print_stats(cfg, stats):
     runtime = round(time.time()-stats['start_timestamp'])
     print("Benchmark Statistics")
     print("-"*100)
-    print("Remote       : {}".format(cfg.config['http-api']['url']))
+    print("Remote       : {}".format(cfg.args.ls_addr))
     print("Start Time   : {}".format(datetime.fromtimestamp(stats['start_timestamp'], tz=ZoneInfo("UTC"))))
     print("Current Time : {}".format(datetime.now(tz=ZoneInfo("UTC"))))
     if cfg.args.max_runtime:
@@ -213,12 +167,9 @@ def print_stats(cfg, stats):
     for benchmark_id, benchmark_data in stats['benchmarks'].items():
         index.append("{}".format(benchmark_id))
         requests_count = benchmark_data['requests']['success'] + benchmark_data['requests']['error']
-        requests_rps_target = benchmark_data['config']['threads'] * benchmark_data['config']['thread_max_rps']
         if requests_count and runtime:
-            requests_rps = round(requests_count / runtime, 2)
             data = [
-                requests_rps_target,
-                requests_rps,
+                round(requests_count / runtime, 2),
                 "{}ms".format(round(benchmark_data['latency']['min'])),
                 "{}ms".format(round(benchmark_data['latency']['sum']/requests_count)),
                 "{}ms".format(round(benchmark_data['latency']['max'])),
@@ -227,13 +178,13 @@ def print_stats(cfg, stats):
                 "{}%".format(round((benchmark_data['requests']['error'] / requests_count) * 100))
             ]
         else:
-            data = [requests_rps_target, 0,"0ms","0ms","0ms",0,0,"0%"]
+            data = [0,"0ms","0ms","0ms",0,0,"0%"]
 
 
         rows.append(data)
 
     pd.set_option('display.max_rows', 10000)
-    table = pd.DataFrame(rows, columns=['RPS.T', 'RPS.R', 'L.Min', 'L.Avg','L.Max','Success', 'Failure', 'F.Rate'], index=index)
+    table = pd.DataFrame(rows, columns=['RPS', 'L.Min', 'L.Avg','L.Max','Success', 'Failure', 'F.Rate'], index=index)
     print(table)
     print("-"*100)
     print("\n")

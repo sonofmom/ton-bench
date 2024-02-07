@@ -17,9 +17,15 @@ class ShardsThread(Thread):
         self.api = TonHttpApi(self.config["http-api"],self.log)
 
     def run(self):
+        rs = self.api.jsonrpc("getMasterchainInfo", {})
+        last_mc_seqno = rs["result"]["last"]["seqno"]
+
+        if self.params["seqno_range"][0] < 0:
+            self.params["seqno_range"][0] = last_mc_seqno + self.params["seqno_range"][0]
+
         if self.params["seqno_range"][1] is None:
             rs = self.api.jsonrpc("getMasterchainInfo", {})
-            self.params["seqno_range"][1] = rs["result"]["last"]["seqno"]
+            self.params["seqno_range"][1] = last_mc_seqno
 
         while True:
             if self.gk.kill_now:

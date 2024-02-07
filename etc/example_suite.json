@@ -1,8 +1,4 @@
 {
-  "http-api": {
-    "url": "http://host:port/jsonRPC",
-    "api_token": false
-  },
   "data": {
     "accounts": {
       "all": "/tmp/accounts_testnet.txt"
@@ -31,6 +27,15 @@
         "thread_max_rps": 5,
         "params": {
           "seqno_range": [9000000,null]
+        }
+      },
+      {
+        "method": "shards",
+        "id": "inscriptions",
+        "threads": 5,
+        "thread_max_rps": 2,
+        "params": {
+          "seqno_range": [34711515,34834698]
         }
       },
       {

@@ -10,41 +10,32 @@ class AppConfig:
         self.args = args
         self.log = Logger(args.verbosity)
         self.config = None
-        self.ls_config = None
         self.gk = GracefulKiller()
-        self.tmp = {}
         self.data = {
-            "accounts": None
+            "accounts": None,
+            "blocks": None
         }
 
 
-        if hasattr(self.args, 'config_file'):
-            fn = self.args.config_file
-            self.log.log(self.__class__.__name__, 3, 'Config file {}'.format(fn))
+        if hasattr(self.args, 'benchmark'):
+            fn = self.args.benchmark
+            self.log.log(self.__class__.__name__, 3, 'Benchmark file {}'.format(fn))
             if not gt.check_file_exists(fn):
-                self.log.log(self.__class__.__name__, 1, "Configuration file does not exist!")
+                self.log.log(self.__class__.__name__, 1, "Benchmark file does not exist!")
                 sys.exit(1)
             try:
                 fh = open(fn, 'r')
                 self.config = json.loads(fh.read())
                 fh.close()
             except Exception as e:
-                self.log.log(self.__class__.__name__, 1, "Configuration file read error: {}".format(str(e)))
+                self.log.log(self.__class__.__name__, 1, "Benchmark file read error: {}".format(str(e)))
                 sys.exit(1)
 
-            if "liteClient" in self.config:
-                fn = self.config["liteClient"]["config"]
-                self.log.log(self.__class__.__name__, 3, 'LS Config file {}'.format(fn))
-                if not gt.check_file_exists(fn):
-                    self.log.log(self.__class__.__name__, 1, "LS Configuration file does not exist!")
-                    sys.exit(1)
-                try:
-                    fh = open(fn, 'r')
-                    self.ls_config = json.loads(fh.read())
-                    fh.close()
-                except Exception as e:
-                    self.log.log(self.__class__.__name__, 1, "LS Configuration file read error: {}".format(str(e)))
-                    sys.exit(1)
+            if 'api_url' in self.args:
+                self.config['http-api'] = {
+                    'url': self.args.api_url,
+                    'api_token': self.args.api_key
+                }
 
             if "data" in self.config:
                 if "accounts" in self.config["data"] and self.config["data"]["accounts"]:
