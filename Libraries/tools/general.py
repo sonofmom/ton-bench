@@ -193,7 +193,8 @@ def send_api_query(url, payload=None, method=None, headers=None):
         raise Exception("Error: {}".format(str(e)))
 
     if result.ok != True:
-        raise Exception("Code {}".format(result.status_code))
+        data = json.loads(result.content.decode('utf-8'))
+        raise Exception("Code {}: {}".format(result.status_code, data['error']))
 
     return result.json()
 
