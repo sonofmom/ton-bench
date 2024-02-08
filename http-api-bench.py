@@ -249,6 +249,7 @@ def print_stats(cfg, stats):
             index.append(error)
             rows.append([count])
 
+        pd.set_option('display.max_colwidth', 500)
         pd.set_option('display.max_rows', 10000)
         table = pd.DataFrame(rows, columns=['Count'], index=index)
         print(table)
