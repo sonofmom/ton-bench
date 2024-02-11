@@ -36,7 +36,7 @@ class GetTransactionsThread(Thread):
                 runtime_ms = (time.time() - start_timestamp) * 1000
                 if not rs:
                     self.queues['error'].put({'request': params, 'error': 'Empty response'})
-                if rs["ok"]:
+                elif rs["ok"]:
                     self.log.log(self.__class__.__name__, 3, '[{}] Query completed in {} ms'.format(self.id,runtime_ms))
                     self.queues['success'].put(runtime_ms)
                 else:

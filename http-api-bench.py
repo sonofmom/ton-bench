@@ -52,6 +52,14 @@ def run():
                         action='store',
                         help='Run benchmark for set time in seconds, OPTIONAL, default: unlimited')
 
+    parser.add_argument('-s', '--stats-file',
+                        required=False,
+                        type=str,
+                        default=None,
+                        dest='stats_file',
+                        action='store',
+                        help='Save stats to filename, OPTIONAL')
+
     parser.add_argument('-v', '--verbosity',
                         required=False,
                         type=int,
@@ -145,6 +153,10 @@ def run():
         'benchmarks': {},
         'errors': {}
     }
+    if cfg.args.stats_file:
+        with open(cfg.args.stats_file, mode='w') as fd:
+            pass
+
     while True:
         if cfg.gk.kill_now:
             cfg.log.log(os.path.basename(__file__), 3, "Exiting main loop")
@@ -210,6 +222,13 @@ def print_stats(cfg, stats):
     rows = []
 
     print("-"*100)
+    totals = {
+        'rps_target': [],
+        'rps': [],
+        'requests': [],
+        'requests_success': [],
+        'requests_error': []
+    }
     for benchmark_id, benchmark_data in stats['benchmarks'].items():
         index.append("{}".format(benchmark_id))
         requests_count = benchmark_data['requests']['success'] + benchmark_data['requests']['error']
@@ -226,11 +245,32 @@ def print_stats(cfg, stats):
                 benchmark_data['requests']['error'],
                 "{}%".format(round((benchmark_data['requests']['error'] / requests_count) * 100))
             ]
+            totals['rps_target'].append(requests_rps_target)
+            totals['rps'].append(requests_rps)
+            totals['requests'].append(requests_count)
+            totals['requests_success'].append(benchmark_data['requests']['success'])
+            totals['requests_error'].append(benchmark_data['requests']['error'])
         else:
             data = [requests_rps_target, 0,"0ms","0ms","0ms",0,0,"0%"]
 
-
         rows.append(data)
+
+    if totals['rps_target']:
+        data = [
+            sum(totals['rps_target']),
+            sum(totals['rps']),
+            '',
+            '',
+            '',
+            sum(totals['requests_success']),
+            sum(totals['requests_error']),
+            "{}%".format(round((sum(totals['requests_error']) / sum(totals['requests']) * 100)))
+        ]
+    else:
+        data = [0,0,'','','',0,0,"0%"]
+
+    rows.append(data)
+    index.append("TOTALS")
 
     pd.set_option('display.max_rows', 10000)
     table = pd.DataFrame(rows, columns=['RPS.T', 'RPS.R', 'L.Min', 'L.Avg','L.Max','Success', 'Failure', 'F.Rate'], index=index)
@@ -253,6 +293,19 @@ def print_stats(cfg, stats):
         pd.set_option('display.max_rows', 10000)
         table = pd.DataFrame(rows, columns=['Count'], index=index)
         print(table)
+
+    if cfg.args.stats_file and  totals['rps_target']:
+        with open(cfg.args.stats_file, mode='a') as fd:
+            data = [
+                str(sum(totals['rps_target'])),
+                str(sum(totals['rps'])),
+                str(sum(totals['requests_success'])),
+                str(sum(totals['requests_error'])),
+                str(round((sum(totals['requests_error']) / sum(totals['requests']) * 100)))
+            ]
+
+
+            fd.write(','.join(data) + "\n")
 
 if __name__ == '__main__':
     run()
