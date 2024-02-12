@@ -60,6 +60,30 @@ def run():
                         action='store',
                         help='Save stats to filename, OPTIONAL')
 
+    parser.add_argument('--render-file',
+                        required=False,
+                        type=str,
+                        default=None,
+                        dest='render_file',
+                        action='store',
+                        help='Save results to filename, OPTIONAL')
+
+    parser.add_argument('-n', '--note',
+                        required=False,
+                        type=str,
+                        default=None,
+                        dest='note',
+                        action='store',
+                        help='Note to print on stats - OPTIONAL')
+
+    parser.add_argument('-r', '--render-inverval',
+                        required=False,
+                        type=int,
+                        default=5,
+                        dest='render_interval',
+                        action='store',
+                        help='Render / stats interval, OPTIONAL, defaults to 5')
+
     parser.add_argument('-v', '--verbosity',
                         required=False,
                         type=int,
@@ -162,6 +186,11 @@ def run():
             cfg.log.log(os.path.basename(__file__), 3, "Exiting main loop")
             break
 
+        run_stats = {
+            'success': 0,
+            'error': 0
+        }
+
         for benchmark_id, benchmark_queues in queues.items():
             if benchmark_id not in stats['benchmarks']:
                 stats['benchmarks'][benchmark_id] = {
@@ -180,6 +209,7 @@ def run():
 
             for idx in range(benchmark_queues['success'].qsize()):
                 result = benchmark_queues['success'].get()
+                run_stats['success'] += 1
                 stats['benchmarks'][benchmark_id]['requests']['success'] += 1
                 stats['benchmarks'][benchmark_id]['latency']['sum'] += result
                 if result < stats['benchmarks'][benchmark_id]['latency']['min']:
@@ -189,39 +219,56 @@ def run():
 
             for idx in range(benchmark_queues['error'].qsize()):
                 result = benchmark_queues['error'].get()
+                run_stats['error'] += 1
                 stats['benchmarks'][benchmark_id]['requests']['error'] += 1
                 if result['error'] not in stats['errors']:
                     stats['errors'][result['error']] = 0
 
                 stats['errors'][result['error']] +=1
 
-        print_stats(cfg, stats)
-        time.sleep(1)
+        if cfg.args.stats_file and (run_stats['success'] or run_stats['error']):
+            run_stats['total'] = run_stats['success'] + run_stats['error']
+            with open(cfg.args.stats_file, mode='a') as fd:
+                data = [
+                    str(round(run_stats['total']/cfg.args.render_interval, 2)),
+                    str(round(run_stats['error'] / run_stats['total'] * 100, 2))
+                ]
+                fd.write(','.join(data) + "\n")
+
+
+        if cfg.args.render_file and (run_stats['success'] or run_stats['error']):
+            with open(cfg.args.render_file, mode='w') as fd:
+                fd.write(render_stats(cfg, stats))
+
+        os.system("clear")
+        print(render_stats(cfg, stats))
+        time.sleep(cfg.args.render_interval)
         if cfg.args.max_runtime and (time.time() - stats['start_timestamp']) > cfg.args.max_runtime:
             cfg.gk.kill_now = True
 
     sys.exit(0)
 
 
-def print_stats(cfg, stats):
-    os.system("clear")
+def render_stats(cfg, stats):
+    result = ""
     runtime = round(time.time()-stats['start_timestamp'])
-    print("Benchmark Statistics")
-    print("-"*100)
-    print("Remote       : {}".format(cfg.config['http-api']['url']))
-    print("Start Time   : {}".format(datetime.fromtimestamp(stats['start_timestamp'], tz=ZoneInfo("UTC"))))
-    print("Current Time : {}".format(datetime.now(tz=ZoneInfo("UTC"))))
+    result += "Benchmark Statistics\n"
+    result += "-"*100+"\n"
+    result += "Remote       : {}".format(cfg.config['http-api']['url'])+"\n"
+    result += "Note         : {}".format(cfg.args.note)+"\n"
+    result += "Start Time   : {}".format(datetime.fromtimestamp(stats['start_timestamp'], tz=ZoneInfo("UTC")))+"\n"
+    result += "Current Time : {}".format(datetime.now(tz=ZoneInfo("UTC")))+"\n"
     if cfg.args.max_runtime:
-        print("Runtime      : {} of {} seconds".format(runtime, cfg.args.max_runtime))
+        result += "Runtime      : {} of {} seconds".format(runtime, cfg.args.max_runtime)+"\n"
     else:
-        print("Runtime      : {} seconds".format(runtime))
+        result += "Runtime      : {} seconds".format(runtime)+"\n"
 
-    print("Total threads: {}".format(stats['threads_count']))
+    result += "Total threads: {}".format(stats['threads_count'])+"\n"
 
     index = []
     rows = []
 
-    print("-"*100)
+    result += "-"*100+"\n"
     totals = {
         'rps_target': [],
         'rps': [],
@@ -274,14 +321,14 @@ def print_stats(cfg, stats):
 
     pd.set_option('display.max_rows', 10000)
     table = pd.DataFrame(rows, columns=['RPS.T', 'RPS.R', 'L.Min', 'L.Avg','L.Max','Success', 'Failure', 'F.Rate'], index=index)
-    print(table)
-    print("-"*100)
-    print("\n")
+    result += str(table)+"\n"
+    result += "-"*100+"\n"
+    result += "\n\n"
 
-    print("Errors")
-    print("-"*100)
+    result += "Errors"+"\n"
+    result += "-"*100+"\n"
     if not stats['errors']:
-        print("None")
+        result += "None"+"\n"
     else:
         index = []
         rows = []
@@ -292,20 +339,9 @@ def print_stats(cfg, stats):
         pd.set_option('display.max_colwidth', 500)
         pd.set_option('display.max_rows', 10000)
         table = pd.DataFrame(rows, columns=['Count'], index=index)
-        print(table)
+        result += str(table)+"\n"
 
-    if cfg.args.stats_file and  totals['rps_target']:
-        with open(cfg.args.stats_file, mode='a') as fd:
-            data = [
-                str(sum(totals['rps_target'])),
-                str(sum(totals['rps'])),
-                str(sum(totals['requests_success'])),
-                str(sum(totals['requests_error'])),
-                str(round((sum(totals['requests_error']) / sum(totals['requests']) * 100)))
-            ]
-
-
-            fd.write(','.join(data) + "\n")
+    return result
 
 if __name__ == '__main__':
     run()
