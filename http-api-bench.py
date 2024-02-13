@@ -108,6 +108,10 @@ def run():
     tip_thread.start()
     print("Waiting to tip")
     while not cfg.data['tip']:
+        if cfg.gk.kill_now:
+            cfg.log.log(os.path.basename(__file__), 3, "Breaking waiting for tip")
+            break
+            
         time.sleep(0.5)
 
     benchmark_configs = {}
