@@ -17,7 +17,7 @@ class GetBlockTransactions(Thread):
         self.api = TonHttpApi(self.config["http-api"],self.log)
 
     def run(self):
-        if self.params["index_range"][1] is None:
+        if self.params["blocks_list"] and self.params["index_range"][1] is None:
             self.params["index_range"][1] = len(self.data["blocks"][self.params["blocks_list"]])-1
 
         while True:
@@ -27,7 +27,16 @@ class GetBlockTransactions(Thread):
 
             start_timestamp = time.time()
 
-            block = self.data["blocks"][self.params["blocks_list"]][random.randrange(self.params["index_range"][0],self.params["index_range"][1])]
+            if self.params["blocks_list"]:
+                block = self.data["blocks"][self.params["blocks_list"]][random.randrange(self.params["index_range"][0],self.params["index_range"][1])]
+            else:
+                record = random.choice(self.data['tip'][0])
+                block = [
+                    record['seqno'],
+                    0,
+                    record['shard']
+                ]
+
             if (self.params["count_range"][0] == self.params["count_range"][1]):
                 count = self.params["count_range"][0]
             else:

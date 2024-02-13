@@ -17,16 +17,6 @@ class ShardsThread(Thread):
         self.api = TonHttpApi(self.config["http-api"],self.log)
 
     def run(self):
-        rs = self.api.jsonrpc("getMasterchainInfo", {})
-        last_mc_seqno = rs["result"]["last"]["seqno"]
-
-        if self.params["seqno_range"][0] < 0:
-            self.params["seqno_range"][0] = last_mc_seqno + self.params["seqno_range"][0]
-
-        if self.params["seqno_range"][1] is None:
-            rs = self.api.jsonrpc("getMasterchainInfo", {})
-            self.params["seqno_range"][1] = last_mc_seqno
-
         while True:
             if self.gk.kill_now:
                 self.log.log(self.__class__.__name__, 3, '[{}] Terminating'.format(self.id))
@@ -34,8 +24,26 @@ class ShardsThread(Thread):
 
             start_timestamp = time.time()
 
+            tip_seqno = self.data['tip'][-1][0]['seqno']
+            if self.params["seqno_range"][0] is None:
+                seqno_range_from = tip_seqno
+            elif self.params["seqno_range"][0] < 0:
+                seqno_range_from = tip_seqno + self.params["seqno_range"][0]
+            else:
+                seqno_range_from = self.params["seqno_range"][0]
+
+            if self.params["seqno_range"][1] is None:
+                seqno_range_to = tip_seqno
+            else:
+                seqno_range_to = self.params["seqno_range"][1]
+
+            if seqno_range_from == seqno_range_to:
+                seqno = seqno_range_from
+            else:
+                seqno = random.randrange(seqno_range_from,seqno_range_to)
+
             params = {
-                "seqno": random.randrange(self.params["seqno_range"][0],self.params["seqno_range"][1])
+                "seqno": seqno
             }
             self.log.log(self.__class__.__name__, 3, '[{}] Requesting shards for seqno {}'.format(self.id,params["seqno"]))
             rs = None

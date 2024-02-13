@@ -12,6 +12,7 @@ from Classes.Benchmarks.HttpApi.GetTransactionsThread import GetTransactionsThre
 from Classes.Benchmarks.HttpApi.ShardsThread import ShardsThread
 from Classes.Benchmarks.HttpApi.GetBlockTransactionsThread import GetBlockTransactions
 from Classes.Benchmarks.HttpApi.GetWalletInformationThread import GetWalletInformationThread
+from Classes.Benchmarks.HttpApi.BlockchainTipThread import BlockchainTipThread
 from queue import Queue
 import pandas as pd
 
@@ -96,6 +97,19 @@ def run():
     cfg = AppConfig(parser.parse_args())
 
     start_timestamp = time.time()
+
+    tip_thread = BlockchainTipThread(
+        config=cfg.config,
+        data=cfg.data,
+        log=cfg.log,
+        gk=cfg.gk,
+        refresh_frequency=cfg.config['params']['tip_refresh_frequency']
+    )
+    tip_thread.start()
+    print("Waiting to tip")
+    while not cfg.data['tip']:
+        time.sleep(0.5)
+
     benchmark_configs = {}
     queues = {}
     th_db = []

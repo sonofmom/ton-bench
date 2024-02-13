@@ -13,7 +13,8 @@ class AppConfig:
         self.gk = GracefulKiller()
         self.data = {
             "accounts": None,
-            "blocks": None
+            "blocks": None,
+            "tip": None
         }
 
 
