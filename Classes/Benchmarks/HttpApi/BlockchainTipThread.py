@@ -21,6 +21,8 @@ class BlockchainTipThread(Thread):
 
             start_timestamp = time.time()
             result = {}
+            last_mc_seqno=None
+            shards=None
             try:
                 rs = self.api.jsonrpc("getMasterchainInfo", {})
                 last_mc_seqno = rs["result"]["last"]["seqno"]
