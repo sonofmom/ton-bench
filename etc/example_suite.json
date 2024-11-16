@@ -1,74 +1,52 @@
 {
   "data": {
     "accounts": {
-      "all": "/tmp/accounts_testnet.txt"
+      "recent": "/tmp/bench_accounts_recent.txt"
     },
-    "blocks": {
-      "masterchain": "/tmp/blocks_mc_testnet.txt",
-      "workchain": "/tmp/blocks_wc_testnet.txt"
-    }
+    "blocks": {}
   },
-  "benchmarks": {
-    "http-api": [
-      {
-        "method": "getTransactions",
-        "id": "default",
-        "threads": 20,
-        "thread_max_rps": 5,
-        "params": {
-          "limit_range": [10,20],
-          "accounts_list": "all"
-        }
-      },
-      {
-        "method": "shards",
-        "id": "recent",
-        "threads": 10,
-        "thread_max_rps": 5,
-        "params": {
-          "seqno_range": [9000000,null]
-        }
-      },
-      {
-        "method": "shards",
-        "id": "inscriptions",
-        "threads": 5,
-        "thread_max_rps": 2,
-        "params": {
-          "seqno_range": [34711515,34834698]
-        }
-      },
-      {
-        "method": "shards",
-        "id": "archival",
-        "threads": 5,
-        "thread_max_rps": 1,
-        "params": {
-          "seqno_range": [0,5000000]
-        }
-      },
-      {
-        "method": "getBlockTransactions",
-        "id": "masterchain",
-        "threads": 5,
-        "thread_max_rps": 1,
-        "params": {
-          "count_range": [40,40],
-          "index_range": [0,null],
-          "blocks_list": "masterchain"
-        }
-      },
-      {
-        "method": "getBlockTransactions",
-        "id": "workchain",
-        "threads": 5,
-        "thread_max_rps": 1,
-        "params": {
-          "count_range": [40,40],
-          "index_range": [0,null],
-          "blocks_list": "workchain"
-        }
+  "params": {
+    "tip_refresh_frequency": 1
+  },
+  "benchmarks": [
+    {
+      "method": "shards",
+      "id": "recent",
+      "threads": 10,
+      "thread_max_rps": 10,
+      "params": {
+        "seqno_range": [-10,null]
       }
-    ]
-  }
+    },
+    {
+      "method": "shards",
+      "id": "3d",
+      "threads": 10,
+      "thread_max_rps": 10,
+      "params": {
+        "seqno_range": [-25920,null]
+      }
+    },
+    {
+      "method": "getTransactions",
+      "id": "recent",
+      "threads": 20,
+      "thread_max_rps": 10,
+      "params": {
+        "limit_range": [30,40],
+        "accounts_list": "recent"
+      }
+    },
+    {
+      "method": "getBlockTransactions",
+      "id": "tip",
+      "threads": 1,
+      "thread_max_rps": 5,
+      "params": {
+        "count_range": [40,40],
+        "index_range": [0,null],
+        "blocks_list": null
+      }
+    }
+  ]
 }
